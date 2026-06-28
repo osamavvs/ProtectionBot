@@ -3,7 +3,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from handlers import admin_panel, commands, anti_spam
 
-TOKEN = "هنا_ضع_توكن_البوت_الخاص_بك"
+TOKEN = "8787399797:AAFFPGgLOqo7hY9hsfzya9XbTf79Ra0DsXU"
 
 async def main():
     bot = Bot(token=TOKEN)
