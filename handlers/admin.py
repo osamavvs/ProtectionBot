@@ -3,7 +3,7 @@ from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, Inline
 
 router = Router()
 
-# قاعدة بيانات مؤقتة لحفظ الحماية (True تعني مفتوح، False تعني مقفول وممنوع)
+# قاعدة بيانات مؤقتة لحفظ الحماية
 group_settings = {}
 
 def get_settings(chat_id):
@@ -34,26 +34,7 @@ async def activate_group(message: Message):
     get_settings(message.chat.id)
     await message.reply(f"📌 المجموعه » {message.chat.title}\n✨ تم تفعيلها بنجاح في سورس كرستال.")
 
-# --- 2. معالجة أوامر القفل والفتح بالرسائل ---
-@router.message(F.chat.type.in_({"group", "supergroup"}), lambda msg: msg.text and (msg.text.startswith("قفل ") or msg.text.startswith("فتح ")))
-async def handle_locks_and_unlocks(message: Message):
-    if not await is_admin(message): return
-    
-    parts = message.text.strip().split(" ", 1)
-    action = parts[0]  # "قفل" أو "فتح"
-    target = parts[1]  # الشيء المراد قفله
-    
-    settings = get_settings(message.chat.id)
-    
-    if target in settings:
-        if action == "قفل":
-            settings[target] = False
-            await message.reply(f"🔒 تم قفل **{target}** بنجاح وتم تفعيل المنع للرسائل.")
-        else:
-            settings[target] = True
-            await message.reply(f"🔓 تم فتح **{target}** بنجاح، بإمكان الأعضاء الإرسال الآن.")
-
-# --- 3. عرض قائمة الأوامر بالأزرار الشفافة ---
+# --- 2. عرض قائمة الأوامر بالأزرار الشفافة (تم تقديمها لتعمل أولاً) ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
 async def send_group_commands(message: Message):
     if not await is_admin(message): return
@@ -81,12 +62,30 @@ async def send_group_commands(message: Message):
     ])
     await message.reply(text=main_text, reply_markup=keyboard)
 
-# --- 4. الفحص الفعلي الصارم وحذف الرسائل المقفولة للأعضاء ---
+# --- 3. معالجة أوامر القفل والفتح بالرسائل للمشرفين ---
+@router.message(F.chat.type.in_({"group", "supergroup"}), lambda msg: msg.text and (msg.text.startswith("قفل ") or msg.text.startswith("فتح ")))
+async def handle_locks_and_unlocks(message: Message):
+    if not await is_admin(message): return
+    
+    parts = message.text.strip().split(" ", 1)
+    action = parts[0]
+    target = parts[1]
+    
+    settings = get_settings(message.chat.id)
+    
+    if target in settings:
+        if action == "قفل":
+            settings[target] = False
+            await message.reply(f"🔒 تم قفل **{target}** بنجاح وتم تفعيل المنع للرسائل.")
+        else:
+            settings[target] = True
+            await message.reply(f"🔓 تم فتح **{target}** بنجاح، بإمكان الأعضاء الإرسال الآن.")
+
+# --- 4. الفحص الفعلي الصارم وحذف الرسائل المقفولة للأعضاء العاديين ---
 @router.message(F.chat.type.in_({"group", "supergroup"}))
 async def monitor_group_messages(message: Message):
     # إذا المرسل مشرف أو أدمن، نتخطى الفحص تماماً ولا نحذف رسالته
     if await is_admin(message):
-        # تشغيل أوامر الإدارة اليدوية للمشرفين بالإرسال
         if message.text and message.reply_to_message:
             text = message.text.strip()
             target_user = message.reply_to_message.from_user
@@ -103,37 +102,30 @@ async def monitor_group_messages(message: Message):
     # جلب إعدادات القفل الحالية للكروب
     settings = get_settings(message.chat.id)
     
-    # 1. إذا تم قفل "الكل"، يتم حذف أي رسالة من العضو فوراً
     if not settings["الكل"]:
         try: return await message.delete()
         except: pass
 
-    # 2. فحص محتوى النصوص (الروابط، المعرفات، التاك، الكلايش)
     if message.text or message.caption:
         text = (message.text or message.caption).strip()
         
-        # حماية الروابط
         if not settings["الروابط"] or not settings["المعرف"]:
             if "http" in text or "t.me/" in text or ".com" in text or "@" in text:
                 try: return await message.delete()
                 except: pass
         
-        # حماية التاك والهاشتاق
         if not settings["التاك"] and ("#" in text or "@" in text):
             try: return await message.delete()
             except: pass
             
-        # حماية الكلايش (النصوص الطويلة جداً التي تسبب تعليق)
         if not settings["الكلايش"] and len(text) > 400:
             try: return await message.delete()
             except: pass
 
-    # 3. فحص التوجيه (Forward)
     if not settings["التوجيه"] and message.forward_date:
         try: return await message.delete()
         except: pass
 
-    # 4. فحص الميديا بجميع أنواعها (صور، فيديو، متحركة، صوت، ملصقات)
     if not settings["الصور"] and message.photo:
         try: return await message.delete()
         except: pass
@@ -158,7 +150,7 @@ async def monitor_group_messages(message: Message):
         try: return await message.delete()
         except: pass
 
-    # 5. تشغيل الكلمات العادية المسموحة والمفتوحة دائماً للأعضاء
+    # تشغيل الكلمات العادية المسموحة والمفتوحة دائماً للأعضاء
     if message.text:
         text = message.text.strip()
         if text == "ايدي":
