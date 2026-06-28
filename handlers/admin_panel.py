@@ -1,41 +1,26 @@
-import json
-import os
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import Command
+from aiogram.types import Message
+import json, os
 
 router = Router()
 ADMIN_ID = 8074717568
 CONFIG_FILE = "settings.json"
 
-# دالة لحفظ الحالة
-def save_settings(data):
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(data, f)
+def load():
+    if not os.path.exists(CONFIG_FILE): return {"mute": False, "promote": False}
+    with open(CONFIG_FILE, "r") as f: return json.load(f)
 
-# دالة لقراءة الحالة
-def load_settings():
-    if not os.path.exists(CONFIG_FILE):
-        return {"locked": False}
-    with open(CONFIG_FILE, "r") as f:
-        return json.load(f)
+def save(data):
+    with open(CONFIG_FILE, "w") as f: json.dump(data, f)
 
-@router.message(Command("start"), F.chat.type == "private")
-async def start(message: Message):
-    if message.from_user.id == ADMIN_ID:
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="قفل المجموعة 🔒", callback_data="lock"), 
-             InlineKeyboardButton(text="فتح المجموعة 🔓", callback_data="unlock")]
-        ])
-        await message.answer("🛠 **لوحة تحكم العمدة:**", reply_markup=kb)
-
-@router.callback_query(F.data.in_(["lock", "unlock"]))
-async def toggle_lock(call: CallbackQuery):
-    settings = load_settings()
-    if call.data == "lock":
-        settings["locked"] = True
-        await call.answer("تم قفل المجموعة 🔒")
-    else:
-        settings["locked"] = False
-        await call.answer("تم فتح المجموعة 🔓")
-    save_settings(settings)
+@router.message(F.text.in_({"تعطيل الكتم", "تفعيل الكتم", "تعطيل الرفع", "تفعيل الرفع"}))
+async def control(message: Message):
+    if message.from_user.id != ADMIN_ID: return
+    data = load()
+    if message.text == "تعطيل الكتم": data["mute"] = True
+    elif message.text == "تفعيل الكتم": data["mute"] = False
+    elif message.text == "تعطيل الرفع": data["promote"] = True
+    elif message.text == "تفعيل الرفع": data["promote"] = False
+    save(data)
+    await message.reply(f"تم تنفيذ الأمر: {message.text}")
+    await message.delete()
