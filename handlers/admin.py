@@ -2,10 +2,8 @@ from aiogram import Router, F
 from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, InlineKeyboardButton
 import random
 
-# تعريف الراوتر بشكل صحيح لـ سورس كرستال
 router = Router()
 
-# قاعدة بيانات مؤقتة لحفظ أقفال وإعدادات القروبات
 group_settings = {}
 
 def get_settings(chat_id):
@@ -17,24 +15,37 @@ def get_settings(chat_id):
         }
     return group_settings[chat_id]
 
-# فحص رتبة المشرف
 async def is_admin(message: Message) -> bool:
     if message.chat.type == "private":
         return False
     member = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
     return member.status in ["creator", "administrator"]
 
-# --- 1. حظر الخاص لـ سورس كرستال ---
-@router.message(F.chat.type == "private")
-async def block_private(message: Message):
-    private_text = """🚸 **عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!**
+# --- 1. ترحيب الخاص فقط للمطور (منع الاستخدام العادي بالخاص) ---
+@router.message(F.chat.type == "private", F.text == "/start")
+async def send_private_start(message: Message):
+    # إذا كان الحساب ليس حسابك (المطور)، تظهر رسالة الرفض
+    if message.from_user.username != "U_K44":
+        await message.reply("🚸 عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!\n👑 مطور السورس: @U_K44")
+        return
 
-❌ لا يمكنك استخدام أوامر البوت هنا في الخاص.
-💎 أضف البوت إلى مجموعتك وارفعها مشرفاً لتستمتع بالحماية والتسلية.
-👑 مطور السورس: @U_K44"""
-    try:
-        await message.reply(text=private_text)
-    except: pass
+    start_text = """👑 أهلاً أدمن كرستال
+    
+💎 أهلاً بك في Crystal Bot
+
+✨ نظام متكامل للإدارة والتحكم
+⚡ سرعة + حماية + أدوات قوية
+
+🔷 اختر من الأزرار بالأسفل"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📊 الإحصائيات", callback_data="stats")],
+        [InlineKeyboardButton(text="📢 إرسال رسالة", callback_data="send_msg")],
+        [InlineKeyboardButton(text="👥 المستخدمين", callback_data="users_list")]
+    ])
+    
+    await message.reply(text=start_text, reply_markup=keyboard)
+
 
 # --- 2. أوامر التفعيل والتحكم والأقفال للقروب ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "تفعيل")
@@ -46,7 +57,7 @@ async def activate_group(message: Message):
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل الروابط")
 async def lock_links(message: Message):
     if not await is_admin(message): return
-    get_settings(message.chat.id)["links"] = False  # تم تصحيح مكان القوس هنا لقفل الروابط
+    get_settings(message.chat.id)["links"] = False
     await message.reply("🔒 تم قفل الروابط بنجاح، سيتم تنظيف المجموعة تلقائياً.")
 
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "فتح الروابط")
