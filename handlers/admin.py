@@ -1,64 +1,70 @@
-from aiogram import Router, types
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-
-from db import get_users
-from config import ADMIN_ID
+from aiogram import Router, F
+from aiogram.types import Message
 
 router = Router()
 
-# 🔙 زر رجوع
-def main_panel():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📊 الإحصائيات", callback_data="stats")],
-        [InlineKeyboardButton(text="📢 إرسال رسالة", callback_data="broadcast")],
-        [InlineKeyboardButton(text="👥 المستخدمين", callback_data="users")]
-    ])
+# دالة مساعدة للتأكد إذا كان الشخص الذي أرسل الأمر هو أدمن (مشرف) بالقروب
+async def is_admin(message: Message) -> bool:
+    member = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
+    return member.status in ["creator", "administrator"]
 
-
-# 📊 الإحصائيات
-@router.callback_query(lambda c: c.data == "stats")
-async def stats(call: CallbackQuery):
-
-    if call.from_user.id != ADMIN_ID:
+# أمر (طرد) بالرد على الشخص بدون /
+@router.message(F.text == "طرد")
+async def ban_user(message: Message):
+    if not await is_admin(message):
         return
-
-    users = len(get_users())
-
-    await call.message.edit_text(
-        f"💎 Crystal Stats\n\n👥 عدد المستخدمين: {users}",
-        reply_markup=main_panel()
-    )
-
-
-# 👥 المستخدمين
-@router.callback_query(lambda c: c.data == "users")
-async def users(call: CallbackQuery):
-
-    if call.from_user.id != ADMIN_ID:
+    
+    if not message.reply_to_message:
+        await message.reply("⚠️ عيني، لازم تسوي رد (reply) على رسالة الشخص اللي تريد تطرده.")
         return
+        
+    user_id = message.reply_to_message.from_user.id
+    try:
+        await message.chat.ban(user_id=user_id)
+        await message.reply(f"👤 تم طرد العضو {message.reply_to_message.from_user.full_name} بنجاح!")
+    except Exception as e:
+        await message.reply("❌ البوت ما عنده صلاحية طرد هذا الشخص أو رتبته أعلى من البوت.")
 
-    await call.message.edit_text(
-        f"👥 Crystal Users\n\nعدد المستخدمين: {len(get_users())}",
-        reply_markup=main_panel()
-    )
-
-
-# 📢 إرسال رسالة
-@router.callback_query(lambda c: c.data == "broadcast")
-async def broadcast(call: CallbackQuery):
-
-    if call.from_user.id != ADMIN_ID:
+# أمر (كتم) بالرد على الشخص بدون /
+@router.message(F.text == "كتم")
+async def mute_user(message: Message):
+    if not await is_admin(message):
         return
+        
+    if not message.reply_to_message:
+        await message.reply("⚠️ عيني، لازم تسوي رد (reply) على رسالة الشخص اللي تريد تكتمه.")
+        return
+        
+    user_id = message.reply_to_message.from_user.id
+    try:
+        from aiogram.types import ChatPermissions
+        permissions = ChatPermissions(can_send_messages=False)
+        await message.chat.restrict(user_id=user_id, permissions=permissions)
+        await message.reply(f"🔇 تم كتم العضو {message.reply_to_message.from_user.full_name}!")
+    except Exception as e:
+        await message.reply("❌ ما قدرت أكتم العضو، تأكد من صلاحيات البوت.")
 
-    await call.message.answer("✍️ اكتب الرسالة الآن لإرسالها لجميع المستخدمين")
-
-    @router.message()
-    async def send_all(message: types.Message):
-
-        if message.from_user.id != ADMIN_ID:
-            return
-
-        users = get_users()
-        sent = 0
-
-        for
+# أمر (الغاء الكتم) بالرد على الشخص بدون /
+@router.message(F.text == "الغاء الكتم")
+async def unmute_user(message: Message):
+    if not await is_admin(message):
+        return
+        
+    if not message.reply_to_message:
+        await message.reply("⚠️ عيني، لازم تسوي رد (reply) على الشخص لإلغاء كتمه.")
+        return
+        
+    user_id = message.reply_to_message.from_user.id
+    try:
+        from aiogram.types import ChatPermissions
+        permissions = ChatPermissions(
+            can_send_messages=True, 
+            can_send_audios=True, 
+            can_send_documents=True, 
+            can_send_photos=True, 
+            can_send_videos=True
+        )
+        await message.chat.restrict(user_id=user_id, permissions=permissions)
+        await message.reply(f"🔊 تم إلغاء الكتم عن العضو {message.reply_to_message.from_user.full_name}، تكدر تسولف هسة.")
+    except Exception as e:
+        await message.reply("❌ فشل إلغاء الكتم.")
