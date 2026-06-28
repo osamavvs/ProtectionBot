@@ -4,28 +4,30 @@ import os
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.fsm.storage.memory import MemoryStorage  # <--- هذا السطر الناقص
+from aiogram.fsm.storage.memory import MemoryStorage
 
-from handlers import admin, start, callbacks, replies
+# استدعاء ملفات الـ Handlers
+from handlers import replies, admin, start, callbacks
 
 async def main():
     logging.basicConfig(level=logging.INFO)
     
     TOKEN = os.getenv("BOT_TOKEN")
+    if not TOKEN:
+        print("خطأ: يرجى وضع التوكن في متغيرات Railway باسم BOT_TOKEN")
+        return
 
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
-    
-    # تعريف الذاكرة المؤقتة وربطها بالـ Dispatcher
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
 
-    # ربط الملفات
-    dp.include_router(start.router)      
-    dp.include_router(admin.router)      
+    # الترتيب: replies أولاً حتى لا تحذفها الحماية
     dp.include_router(replies.router)    
+    dp.include_router(admin.router)      
+    dp.include_router(start.router)      
     dp.include_router(callbacks.router)  
 
-    print("💎 سورس كرستال يعمل بنجاح وبأعلى استقرار...")
+    print("💎 سورس كرستال يعمل بنجاح...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
