@@ -1,28 +1,14 @@
-import asyncio
-import logging
-import os
-from aiogram import Bot, Dispatcher
-from handlers import admin_panel, anti_spam, extras, id_card # تأكد من إضافة id_card
+from pyrogram import Client, filters
+from allGP import allGP # استدعاء الملف الذي وضعت فيه كودك
+import redis
 
-TOKEN = os.getenv("TOKEN")
+# إعدادات البوت
+app = Client("my_bot", api_id=12345, api_hash="your_hash", bot_token="TOKEN")
+r = redis.Redis(host='localhost', port=6379, db=0)
 
-async def main():
-    if not TOKEN:
-        logging.error("يرجى إضافة التوكن في Variables في Railway")
-        return
-    
-    bot = Bot(token=TOKEN)
-    dp = Dispatcher() # التعريف هنا مهم جداً
-    
-    # الآن يمكننا استخدام dp لإضافة الروابط
-    dp.include_router(admin_panel.router)
-    dp.include_router(anti_spam.router)
-    dp.include_router(extras.router)
-    dp.include_router(id_card.router) 
-    
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+@app.on_message(filters.group)
+async def handle_group(client, message):
+    # تمرير الرسالة للكود الذي أرسلته لي
+    allGP(client, message, r)
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
+app.run()
