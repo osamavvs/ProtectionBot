@@ -7,6 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 
 from handlers.start import router as start_router
 from handlers.protection import router as protection_router
+from handlers.admin import router as admin_router, set_bot
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -17,11 +18,16 @@ bot = Bot(
 
 dp = Dispatcher()
 
+# 👇 ربط البوت مع الأدمن (مهم جداً)
+set_bot(bot)
+
 # تسجيل الراوترات
 dp.include_router(start_router)
 dp.include_router(protection_router)
+dp.include_router(admin_router)
 
 async def main():
+    print("Bot is running 🚀")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
