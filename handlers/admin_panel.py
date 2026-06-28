@@ -4,36 +4,35 @@ import json, os
 
 router = Router()
 ADMIN_ID = 8074717568
-CONFIG_FILE = "settings.json"
 
-def load():
-    if not os.path.exists(CONFIG_FILE): return {"mute": False, "promote": False, "locked": False}
-    with open(CONFIG_FILE, "r") as f: return json.load(f)
-
-def save(data):
-    with open(CONFIG_FILE, "w") as f: json.dump(data, f)
-
+# القائمة الرئيسية للأوامر
 @router.message(F.text == "الاوامر")
-async def show_commands(message: Message):
+async def show_main_menu(message: Message):
     if message.from_user.id != ADMIN_ID: return
+    
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="تعطيل الكتم", callback_data="mute_off"), InlineKeyboardButton(text="تفعيل الكتم", callback_data="mute_on")],
-        [InlineKeyboardButton(text="تعطيل الرفع", callback_data="promote_off"), InlineKeyboardButton(text="تفعيل الرفع", callback_data="promote_on")],
-        [InlineKeyboardButton(text="قفل المجموعة", callback_data="lock"), InlineKeyboardButton(text="فتح المجموعة", callback_data="unlock")]
+        [InlineKeyboardButton(text="🛠 اوامر الادارة", callback_data="admin_menu")],
+        [InlineKeyboardButton(text="🔒 الفتح والقفل", callback_data="lock_menu")],
+        [InlineKeyboardButton(text="👤 اوامر الاعضاء", callback_data="member_menu")],
+        [InlineKeyboardButton(text="🎮 الالعاب", callback_data="game_menu")],
+        [InlineKeyboardButton(text="🛡 المضاد", callback_data="anti_menu")],
+        [InlineKeyboardButton(text="Source @BBABB9", url="https://t.me/BBABB9")] # زر الحقوق
     ])
-    await message.reply("📋 **أوامر المجموعة:**", reply_markup=keyboard)
-    await message.delete()
+    await message.reply("📋 **قائمة التحكم الرئيسية - سورس العمدة:**", reply_markup=keyboard)
 
-@router.callback_query(F.data.in_(["mute_off", "mute_on", "promote_off", "promote_on", "lock", "unlock"]))
-async def handle_buttons(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID: return await callback.answer("للمنشئ فقط 🚫", show_alert=True)
-    data = load()
-    action = callback.data
-    if action == "mute_off": data["mute"] = True
-    elif action == "mute_on": data["mute"] = False
-    elif action == "promote_off": data["promote"] = True
-    elif action == "promote_on": data["promote"] = False
-    elif action == "lock": data["locked"] = True
-    elif action == "unlock": data["locked"] = False
-    save(data)
-    await callback.answer(f"تم تنفيذ: {action}")
+# القائمة الفرعية (مثال: أوامر الرفع)
+@router.callback_query(F.data == "admin_menu")
+async def admin_menu(callback: CallbackQuery):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="رفع ادمن", callback_data="set_admin"), 
+         InlineKeyboardButton(text="رفع منشئ", callback_data="set_owner")],
+        [InlineKeyboardButton(text="رفع مطور ثانوي", callback_data="set_dev2"), 
+         InlineKeyboardButton(text="رفع مطور اساسي", callback_data="set_dev1")],
+        [InlineKeyboardButton(text="رجوع", callback_data="back_main")]
+    ])
+    await callback.message.edit_text("🛠 **اوامر الرفع والادارة:**", reply_markup=kb)
+
+# زر الرجوع
+@router.callback_query(F.data == "back_main")
+async def back_main(callback: CallbackQuery):
+    await show_main_menu(callback.message)
