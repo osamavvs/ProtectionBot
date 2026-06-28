@@ -1,21 +1,16 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-from handlers import admin, start, callbacks
-
-# ضع التوكين الخاص بك هنا
-API_TOKEN = '8787399797:AAFFPGgLOqo7hY9hsfzya9XbTf79Ra0DsXU'
+from handlers import admin, start, locks
 
 async def main():
-    bot = Bot(token=API_TOKEN)
+    bot = Bot(token="8787399797:AAFFPGgLOqo7hY9hsfzya9XbTf79Ra0DsXU")
     dp = Dispatcher()
 
-    # تسجيل الراوترات فقط (بدون الردود)
-    dp.include_router(start.router)
-    dp.include_router(admin.router)
-    dp.include_router(callbacks.router)
+    # تسجيل الراوترات (إضافة الأجزاء)
+    dp.include_routers(start.router, admin.router, locks.router)
 
-    # بدء التشغيل
+    print("البوت يعمل الآن يا أسامة...")
     await dp.start_polling(bot)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
