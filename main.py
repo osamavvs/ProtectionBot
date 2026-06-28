@@ -7,8 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-BOT_TOKEN = os.getenv("8787399797:AAHWPuu_aryslF5sSAiDEBoSWY9AtpaUGdo")
-
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(
     token=BOT_TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
