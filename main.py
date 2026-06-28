@@ -6,6 +6,7 @@ from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
 from handlers.start import router as start_router
+from handlers.protection import router as protection_router
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -16,8 +17,9 @@ bot = Bot(
 
 dp = Dispatcher()
 
-# تسجيل الراوتر
+# تسجيل الراوترات
 dp.include_router(start_router)
+dp.include_router(protection_router)
 
 async def main():
     await dp.start_polling(bot)
