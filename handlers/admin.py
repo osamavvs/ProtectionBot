@@ -1,12 +1,12 @@
-from aiogram import Router, F
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram import Client, filters
+from database import update_lock
 
-router = Router()
+@Client.on_message(filters.command("قفل_الروابط") & filters.group)
+async def lock_links_cmd(client, message):
+    await update_lock(message.chat.id, "links", 1)
+    await message.reply("تم تفعيل قفل الروابط في القاعدة ✅")
 
-@router.message(F.text == "الاوامر")
-async def show_panel(message):
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="قفل الروابط 🔗", callback_data="lock_links")],
-        [InlineKeyboardButton(text="فتح الروابط 🔓", callback_data="unlock_links")]
-    ])
-    await message.answer("🛠 **لوحة تحكم البوت:**\nاختر من الأزرار بالأسفل:", reply_markup=kb)
+@Client.on_message(filters.command("فتح_الروابط") & filters.group)
+async def unlock_links_cmd(client, message):
+    await update_lock(message.chat.id, "links", 0)
+    await message.reply("تم إلغاء قفل الروابط في القاعدة ✅")
