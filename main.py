@@ -26,10 +26,13 @@ async def main():
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
 
-    # تسجيل جميع الراوترات
-    dp.include_router(commands.router)
-    dp.include_router(anti_spam.router)
-    dp.include_router(admin_panel.router)
+    # في الأعلى
+from handlers import admin_panel, commands, anti_spam
+
+# في الأسفل، الترتيب مهم جداً!
+dp.include_router(admin_panel.router) # اللوحة أولاً
+dp.include_router(commands.router)
+dp.include_router(anti_spam.router)
 
     logging.info("البوت يعمل الآن بنجاح...")
     
