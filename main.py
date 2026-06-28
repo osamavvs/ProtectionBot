@@ -1,29 +1,28 @@
 import asyncio
 import logging
+import os
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-# استدعاء ملفات الهاندلرز (الأوامر والـ Callbacks)
+# استدعاء ملفات الهاندلرز
 from handlers import admin, start, callbacks
 
-# توكن البوت الخاص بك (تأكد من وضعه في إعدادات Railway أو استبداله هنا)
-TOKEN = "YOUR_BOT_TOKEN_HERE"
-
 async def main():
-    # إعدادات اللوج لمعرفة الأخطاء إن وجدت
     logging.basicConfig(level=logging.INFO)
     
-    # تشغيل البوت مع دعم صيغة الماركداون والـ HTML تلقائياً
+    # السيرفر سيقرأ التوكن تلقائياً من متغيرات ريلواي باسم BOT_TOKEN
+    # وإذا لم يجده سيستخدم التوكن الافتراضي المكتوب بالأسفل
+    TOKEN = os.getenv("BOT_TOKEN", "8787399797:AAFFPGgLOqo7hY9hsfzya9XbTf79Ra0DsXU")
+
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
     dp = Dispatcher()
 
-    # ربط الملفات بالترتيب الصحيح لضمان عمل الفلاتر بدون تضارب
-    dp.include_router(start.router)      # ملف الخاص بالمطور
-    dp.include_router(admin.router)      # ملف أوامر المجموعات
-    dp.include_router(callbacks.router)  # ملف أزرار التحكم الشفافة { 1 } والرجوع
+    # ربط الملفات بالترتيب
+    dp.include_router(start.router)      
+    dp.include_router(admin.router)      
+    dp.include_router(callbacks.router)  
 
-    # بدء تشغيل البوت واستقبال الرسائل
     print("💎 سورس كرستال يعمل بنجاح وبدون أخطاء...")
     await dp.start_polling(bot)
 
