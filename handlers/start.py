@@ -1,12 +1,15 @@
-from aiogram import Router
+from aiogram import Router, types
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+
+from db import add_user
 
 router = Router()
 
 @router.message(CommandStart())
-async def start(message: Message):
+async def start(message: types.Message):
+    # تسجيل المستخدم
+    add_user(message.from_user.id)
+
     await message.answer(
-        "🛡 أهلاً بك في بوت الحماية.\n\n"
-        "تم تشغيل البوت بنجاح."
+        "👋 أهلاً بيك!\nالبوت شغال بنجاح 🔥"
     )
