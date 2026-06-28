@@ -3,11 +3,12 @@ from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, Inline
 
 router = Router()
 
-# قاعدة بيانات مؤقتة لحفظ الحماية
+# قاعدة بيانات مؤقتة لحفظ حالات الحماية لكل مجموعة
 group_settings = {}
 
 def get_settings(chat_id):
     if chat_id not in group_settings:
+        # افتراضياً كل الحمايات مفتوحة (True تعني مسموح، False تعني مقفول وممنوع)
         group_settings[chat_id] = {
             "الكل": True, "الدخول": True, "الروابط": True, "المعرف": True,
             "التاك": True, "الشارحه": True, "التعديل": True, "تعديل الميديا": True,
@@ -27,19 +28,21 @@ async def is_admin(message: Message) -> bool:
     member = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
     return member.status in ["creator", "administrator"]
 
-# --- 1. أوامر التفعيل والتعطيل للقروب ---
+# --- 1. أوامر التفعيل والتعطيل للمجموعة ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "تفعيل")
 async def activate_group(message: Message):
     if not await is_admin(message): return
     get_settings(message.chat.id)
     await message.reply(f"📌 المجموعه » {message.chat.title}\n✨ تم تفعيلها بنجاح في سورس كرستال.")
 
-# --- 2. عرض قائمة الأوامر بالأزرار الشفافة (تم تقديمها لتعمل أولاً) ---
+# --- 2. أمر عرض قائمة الأوامر الرئيسية بالأزرار الشفافة ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
 async def send_group_commands(message: Message):
     if not await is_admin(message): return
     
-    main_text = """✧ ¦ اوامـر الـبـوت الـرئـيـسـيـة
+    main_text = """✧ ¦ CRYSTAL
+— — — — — — — — — —
+✧ ¦ اوامـر الـبـوت الـرئـيـسـيـة
 — — — — — — — — — —
 ✧ ¦ م1 ← اوامر الحمايه
 ✧ ¦ م2 ← اوامر الادمنيه
@@ -51,14 +54,35 @@ async def send_group_commands(message: Message):
 ✧ ¦ م8 ← اوامر التسليه
 ✧ ¦ م9 ← اوامر البنك"""
 
+    # الأزرار الشفافة متطابقة تماماً مع طلبك ومربوطة بملف الـ callbacks
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [[InlineKeyboardButton(text="{ 2 }", callback_data="cmd_2"), InlineKeyboardButton(text="{ 1 }", callback_data="cmd_1")]],
-        [[InlineKeyboardButton(text="{ 4 }", callback_data="cmd_4"), InlineKeyboardButton(text="{ 3 }", callback_data="cmd_3")]],
-        [[InlineKeyboardButton(text="{ 6 }", callback_data="cmd_6"), InlineKeyboardButton(text="{ 5 }", callback_data="cmd_5")]],
-        [[InlineKeyboardButton(text="{ الالعاب }", callback_data="cmd_games"), InlineKeyboardButton(text="{ م7 }", callback_data="cmd_7")]],
-        [[InlineKeyboardButton(text="{ اوامر البنك }", callback_data="cmd_bank"), InlineKeyboardButton(text="{ اوامر التسليه }", callback_data="cmd_8")]],
-        [[InlineKeyboardButton(text="{ التعطيل / التفعيل }", callback_data="cmd_toggle"), InlineKeyboardButton(text="{ القفل / الفتح }", callback_data="cmd_locks")]],
-        [[InlineKeyboardButton(text="- قناة السورس .", url="https://t.me/BBABB9")]]
+        [
+            InlineKeyboardButton(text="{ 2 }", callback_data="cmd_2"),
+            InlineKeyboardButton(text="{ 1 }", callback_data="cmd_1")
+        ],
+        [
+            InlineKeyboardButton(text="{ 4 }", callback_data="cmd_4"),
+            InlineKeyboardButton(text="{ 3 }", callback_data="cmd_3")
+        ],
+        [
+            InlineKeyboardButton(text="{ 6 }", callback_data="cmd_6"),
+            InlineKeyboardButton(text="{ 5 }", callback_data="cmd_5")
+        ],
+        [
+            InlineKeyboardButton(text="{ الالعاب }", callback_data="cmd_games"),
+            InlineKeyboardButton(text="{ م7 }", callback_data="cmd_7")
+        ],
+        [
+            InlineKeyboardButton(text="{ اوامر البنك }", callback_data="cmd_bank"),
+            InlineKeyboardButton(text="{ اوامر التسليه }", callback_data="cmd_8")
+        ],
+        [
+            InlineKeyboardButton(text="{ التعطيل / التفعيل }", callback_data="cmd_toggle"),
+            InlineKeyboardButton(text="{ القفل / الفتح }", callback_data="cmd_locks")
+        ],
+        [
+            InlineKeyboardButton(text="- قناة السورس .", url="https://t.me/BBABB9")
+        ]
     ])
     await message.reply(text=main_text, reply_markup=keyboard)
 
@@ -68,23 +92,35 @@ async def handle_locks_and_unlocks(message: Message):
     if not await is_admin(message): return
     
     parts = message.text.strip().split(" ", 1)
-    action = parts[0]
-    target = parts[1]
+    action = parts[0]  # قفل أو فتح
+    target = parts[1]  # الكلمة المستهدفة (مثال: الصور)
     
     settings = get_settings(message.chat.id)
     
     if target in settings:
         if action == "قفل":
             settings[target] = False
-            await message.reply(f"🔒 تم قفل **{target}** بنجاح وتم تفعيل المنع للرسائل.")
+            await message.reply(f"🔒 تم قفل **{target}** بنجاح، سيتم حذف أي رسالة تحتوي عليها.")
         else:
             settings[target] = True
             await message.reply(f"🔓 تم فتح **{target}** بنجاح، بإمكان الأعضاء الإرسال الآن.")
 
-# --- 4. الفحص الفعلي الصارم وحذف الرسائل المقفولة للأعضاء العاديين ---
+# --- 4. مراقبة الرسائل وحذف المحتوى المقفول للأعضاء العاديين ---
 @router.message(F.chat.type.in_({"group", "supergroup"}))
 async def monitor_group_messages(message: Message):
-    # إذا المرسل مشرف أو أدمن، نتخطى الفحص تماماً ولا نحذف رسالته
+    # تخطي الكلمات الأساسية للأوامر لتجنب تعطل البوت
+    if message.text:
+        text_check = message.text.strip()
+        if text_check in ["الاوامر", "تفعيل", "ايدي", "اسمي", "مطور", "المطور"] or text_check.startswith("قفل ") or text_check.startswith("فتح "):
+            if text_check == "ايدي":
+                await message.reply(f"🆔 ايديك » `{message.from_user.id}`\n🗂️ ايدي الكروب » `{message.chat.id}`")
+            elif text_check == "اسمي":
+                await message.reply(f"👤 اسمك الحركي » {message.from_user.first_name}")
+            elif text_check in ["مطور", "المطور"]:
+                await message.reply("👑 مطور السورس الغالي هو: @U_K44")
+            return
+
+    # إذا كان المرسل مشرف، لا يمسح البوت رسالته ويسمح بتنفيذ الأوامر اليدوية (طرد، حظر، كتم)
     if await is_admin(message):
         if message.text and message.reply_to_message:
             text = message.text.strip()
@@ -92,20 +128,20 @@ async def monitor_group_messages(message: Message):
             if text in ["طرد", "حظر"]:
                 try: await message.chat.ban(user_id=target_user.id)
                 except: pass
-                return
             elif text == "كتم":
                 try: await message.chat.restrict(user_id=target_user.id, permissions=ChatPermissions(can_send_messages=False))
                 except: pass
-                return
         return
 
-    # جلب إعدادات القفل الحالية للكروب
+    # جلب الإعدادات الحالية للمجموعة لفحص المنع والحذف
     settings = get_settings(message.chat.id)
     
+    # قفل الكل
     if not settings["الكل"]:
         try: return await message.delete()
         except: pass
 
+    # فحص النصوص الطويلة والروابط والمعرفات والتاغات
     if message.text or message.caption:
         text = (message.text or message.caption).strip()
         
@@ -122,10 +158,12 @@ async def monitor_group_messages(message: Message):
             try: return await message.delete()
             except: pass
 
+    # فحص التوجيه
     if not settings["التوجيه"] and message.forward_date:
         try: return await message.delete()
         except: pass
 
+    # فحص الميديا بجميع أنواعها وحذفها إذا تم قفلها
     if not settings["الصور"] and message.photo:
         try: return await message.delete()
         except: pass
@@ -149,13 +187,3 @@ async def monitor_group_messages(message: Message):
     if not settings["الملفات"] and message.document:
         try: return await message.delete()
         except: pass
-
-    # تشغيل الكلمات العادية المسموحة والمفتوحة دائماً للأعضاء
-    if message.text:
-        text = message.text.strip()
-        if text == "ايدي":
-            await message.reply(f"🆔 ايديك » `{message.from_user.id}`\n🗂️ ايدي الكروب » `{message.chat.id}`")
-        elif text == "اسمي":
-            await message.reply(f"👤 اسمك الحركي » {message.from_user.first_name}")
-        elif text in ["مطور", "المطور"]:
-            await message.reply("👑 مطور السورس الغالي هو: @U_K44")
