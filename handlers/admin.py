@@ -3,12 +3,11 @@ from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, Inline
 
 router = Router()
 
-# قاعدة بيانات مؤقتة لحفظ حالات القفل لكل قروب
+# قاعدة بيانات مؤقتة لحفظ الحماية (True تعني مفتوح، False تعني مقفول وممنوع)
 group_settings = {}
 
 def get_settings(chat_id):
     if chat_id not in group_settings:
-        # افتراضياً كل الحمايات مفتوحة (True تعني مسموح، False تعني مقفول)
         group_settings[chat_id] = {
             "الكل": True, "الدخول": True, "الروابط": True, "المعرف": True,
             "التاك": True, "الشارحه": True, "التعديل": True, "تعديل الميديا": True,
@@ -35,29 +34,26 @@ async def activate_group(message: Message):
     get_settings(message.chat.id)
     await message.reply(f"📌 المجموعه » {message.chat.title}\n✨ تم تفعيلها بنجاح في سورس كرستال.")
 
-# --- 2. معالجة أوامر القفل والفتح ديناميكياً ---
+# --- 2. معالجة أوامر القفل والفتح بالرسائل ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), lambda msg: msg.text and (msg.text.startswith("قفل ") or msg.text.startswith("فتح ")))
 async def handle_locks_and_unlocks(message: Message):
     if not await is_admin(message): return
     
     parts = message.text.strip().split(" ", 1)
     action = parts[0]  # "قفل" أو "فتح"
-    target = parts[1]  # الأمر المراد قفله (مثل "الروابط"، "المعرف")
+    target = parts[1]  # الشيء المراد قفله
     
     settings = get_settings(message.chat.id)
     
     if target in settings:
         if action == "قفل":
             settings[target] = False
-            await message.reply(f"🔒 تم قفل **{target}** بنجاح.")
+            await message.reply(f"🔒 تم قفل **{target}** بنجاح وتم تفعيل المنع للرسائل.")
         else:
             settings[target] = True
-            await message.reply(f"🔓 تم فتح **{target}** بنجاح.")
-    else:
-        # إذا لم يكن الأمر مسجلاً في القائمة الافتراضية
-        pass
+            await message.reply(f"🔓 تم فتح **{target}** بنجاح، بإمكان الأعضاء الإرسال الآن.")
 
-# --- 3. دالة عرض القائمة الرئيسية للأوامر بالأزرار الشفافة ---
+# --- 3. عرض قائمة الأوامر بالأزرار الشفافة ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
 async def send_group_commands(message: Message):
     if not await is_admin(message): return
@@ -83,49 +79,91 @@ async def send_group_commands(message: Message):
         [[InlineKeyboardButton(text="{ التعطيل / التفعيل }", callback_data="cmd_toggle"), InlineKeyboardButton(text="{ القفل / الفتح }", callback_data="cmd_locks")]],
         [[InlineKeyboardButton(text="- قناة السورس .", url="https://t.me/BBABB9")]]
     ])
-    
     await message.reply(text=main_text, reply_markup=keyboard)
 
-# --- 4. فحص وحذف الرسائل المقفولة للأعضاء العاديين ---
+# --- 4. الفحص الفعلي الصارم وحذف الرسائل المقفولة للأعضاء ---
 @router.message(F.chat.type.in_({"group", "supergroup"}))
 async def monitor_group_messages(message: Message):
-    if not message.text: return
-    text = message.text.strip()
-    
-    if text.startswith("/start") or text == "الاوامر": return
-    if await is_admin(message): return  # المشرفين لا ينطبق عليهم القفل
-    
+    # إذا المرسل مشرف أو أدمن، نتخطى الفحص تماماً ولا نحذف رسالته
+    if await is_admin(message):
+        # تشغيل أوامر الإدارة اليدوية للمشرفين بالإرسال
+        if message.text and message.reply_to_message:
+            text = message.text.strip()
+            target_user = message.reply_to_message.from_user
+            if text in ["طرد", "حظر"]:
+                try: await message.chat.ban(user_id=target_user.id)
+                except: pass
+                return
+            elif text == "كتم":
+                try: await message.chat.restrict(user_id=target_user.id, permissions=ChatPermissions(can_send_messages=False))
+                except: pass
+                return
+        return
+
+    # جلب إعدادات القفل الحالية للكروب
     settings = get_settings(message.chat.id)
     
-    # 1. فحص حماية الروابط
-    if not settings["الروابط"] and ("http" in text or "t.me/" in text or ".com" in text):
+    # 1. إذا تم قفل "الكل"، يتم حذف أي رسالة من العضو فوراً
+    if not settings["الكل"]:
         try: return await message.delete()
         except: pass
+
+    # 2. فحص محتوى النصوص (الروابط، المعرفات، التاك، الكلايش)
+    if message.text or message.caption:
+        text = (message.text or message.caption).strip()
         
-    # 2. فحص حماية المعرفات
-    if not settings["المعرف"] and "@" in text:
-        try: return await message.delete()
-        except: pass
+        # حماية الروابط
+        if not settings["الروابط"] or not settings["المعرف"]:
+            if "http" in text or "t.me/" in text or ".com" in text or "@" in text:
+                try: return await message.delete()
+                except: pass
+        
+        # حماية التاك والهاشتاق
+        if not settings["التاك"] and ("#" in text or "@" in text):
+            try: return await message.delete()
+            except: pass
+            
+        # حماية الكلايش (النصوص الطويلة جداً التي تسبب تعليق)
+        if not settings["الكلايش"] and len(text) > 400:
+            try: return await message.delete()
+            except: pass
 
     # 3. فحص التوجيه (Forward)
     if not settings["التوجيه"] and message.forward_date:
         try: return await message.delete()
         except: pass
 
-    # 4. أوامر الحظر والكتم اليدوي بالإرسال
-    if message.reply_to_message:
-        target_user = message.reply_to_message.from_user
-        if text in ["طرد", "حظر"]:
-            try: await message.chat.ban(user_id=target_user.id)
-            except: pass
-        elif text == "كتم":
-            try: await message.chat.restrict(user_id=target_user.id, permissions=ChatPermissions(can_send_messages=False))
-            except: pass
+    # 4. فحص الميديا بجميع أنواعها (صور، فيديو، متحركة، صوت، ملصقات)
+    if not settings["الصور"] and message.photo:
+        try: return await message.delete()
+        except: pass
+        
+    if not settings["الفيديو"] and message.video:
+        try: return await message.delete()
+        except: pass
+        
+    if not settings["المتحركه"] and message.animation:
+        try: return await message.delete()
+        except: pass
+        
+    if not settings["الملصقات"] and message.sticker:
+        try: return await message.delete()
+        except: pass
+        
+    if not settings["الصوت"] and (message.voice or message.audio):
+        try: return await message.delete()
+        except: pass
 
-    # الميزات الباقية (مثل الأيدي والاسم)
-    if text == "ايدي":
-        await message.reply(f"🆔 ايديك » `{message.from_user.id}`\n🗂️ ايدي الكروب » `{message.chat.id}`")
-    elif text == "اسمي":
-        await message.reply(f"👤 اسمك الحركي » {message.from_user.first_name}")
-    elif text == "مطور" or text == "المطور":
-        await message.reply("👑 مطور السورس الغالي هو: @U_K44")
+    if not settings["الملفات"] and message.document:
+        try: return await message.delete()
+        except: pass
+
+    # 5. تشغيل الكلمات العادية المسموحة والمفتوحة دائماً للأعضاء
+    if message.text:
+        text = message.text.strip()
+        if text == "ايدي":
+            await message.reply(f"🆔 ايديك » `{message.from_user.id}`\n🗂️ ايدي الكروب » `{message.chat.id}`")
+        elif text == "اسمي":
+            await message.reply(f"👤 اسمك الحركي » {message.from_user.first_name}")
+        elif text in ["مطور", "المطور"]:
+            await message.reply("👑 مطور السورس الغالي هو: @U_K44")
