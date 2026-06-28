@@ -1,47 +1,31 @@
-from aiogram import Router, types
+from aiogram import Router, F
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-from db import add_user
-from config import ADMIN_ID
 
 router = Router()
 
-# 👑 لوحة الأدمن
-admin_panel = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📊 الإحصائيات", callback_data="stats")],
-    [InlineKeyboardButton(text="📢 إرسال رسالة", callback_data="broadcast")],
-    [InlineKeyboardButton(text="👥 المستخدمين", callback_data="users")]
-])
+# هذا الفلتر (F.chat.type == "private") يضمن أن الأمر لا يعمل نهائياً داخل المجموعات
+@router.message(F.chat.type == "private", CommandStart())
+async def send_private_start(message: Message):
+    
+    # التحقق من أن المستخدم هو المطور أسامة فقط
+    if message.from_user.username != "U_K44":
+        await message.reply("🚸 عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!\n👑 مطور السورس: @U_K44")
+        return
 
-# 👤 لوحة المستخدم
-user_panel = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="ℹ️ معلوماتي", callback_data="info")],
-    [InlineKeyboardButton(text="🆘 مساعدة", callback_data="help")]
-])
+    start_text = """👑 أهلاً أدمن كرستال
+    
+💎 أهلاً بك في Crystal Bot
 
+✨ نظام متكامل للإدارة والتحكم
+⚡ سرعة + حماية + أدوات قوية
 
-@router.message(CommandStart())
-async def start(message: types.Message):
+🔷 اختر من الأزرار بالأسفل"""
 
-    # تسجيل المستخدم
-    add_user(message.from_user.id)
-
-    # 💎 ترحيب كرستال الكامل
-    welcome_text = (
-        "💎 أهلاً بك في Crystal Bot\n\n"
-        "✨ نظام متكامل للإدارة والتحكم\n"
-        "⚡ سرعة + حماية + أدوات قوية\n\n"
-        "🔹 اختر من الأزرار بالأسفل"
-    )
-
-    if message.from_user.id == ADMIN_ID:
-        await message.answer(
-            "👑 أهلاً أدمن كرستال\n\n" + welcome_text,
-            reply_markup=admin_panel
-        )
-    else:
-        await message.answer(
-            welcome_text,
-            reply_markup=user_panel
-        )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📊 الإحصائيات", callback_data="stats")],
+        [InlineKeyboardButton(text="📢 إرسال رسالة", callback_data="send_msg")],
+        [InlineKeyboardButton(text="👥 المستخدمين", callback_data="users_list")]
+    ])
+    
+    await message.reply(text=start_text, reply_markup=keyboard)
