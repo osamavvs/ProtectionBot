@@ -1,113 +1,55 @@
-from aiogram import Router, F
-from aiogram.types import Message, ChatPermissions
-import random
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
-router = Router()
-
-# قاعدة بيانات مؤقتة لحفظ أقفال وإعدادات القروبات
-group_settings = {}
-
-def get_settings(chat_id):
-    if chat_id not in group_settings:
-        group_settings[chat_id] = {
-            "links": False,     # مقفول تلقائياً
-            "forward": False,   # مقفول تلقائياً
-            "username": False   # مقفول تلقائياً
-        }
-    return group_settings[chat_id]
-
-# فحص رتبة المشرف
-async def is_admin(message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-    member = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
-    return member.status in ["creator", "administrator"]
-
-# --- 1. حظر الخاص تماماً لـ سورس كرستال ---
-@router.message(F.chat.type == "private")
-async def block_private(message: Message):
-    private_text = """🚸 **عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!**
-
-❌ لا يمكنك استخدام أوامر البوت هنا في الخاص.
-💎 أضف البوت إلى مجموعتك وارفعها مشرفاً لتستمتع بالحماية والتسلية."""
-    try:
-        await message.reply(text=private_text)
-    except: pass
-
-# --- 2. أوامر التفعيل والتحكم والأقفال للقروب ---
-
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "تفعيل")
-async def activate_group(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)
-    await message.reply(f"📌 المجموعه » {message.chat.title}\n✨ تم تفعيلها بنجاح في سورس كرستال.")
-
-# قفل وفتح الروابط
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل الروابط")
-async def lock_links(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)["links"] = False
-    await message.reply("🔒 تم قفل الروابط بنجاح، سيتم تنظيف المجموعة تلقائياً.")
-
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "فتح الروابط")
-async def unlock_links(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)["links"] = True
-    await message.reply("🔓 تم فتح الروابط، بإمكان الأعضاء النشر الآن.")
-
-# قفل وفتح التوجيه (Forward)
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل التوجيه")
-async def lock_forward(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)["forward"] = False
-    await message.reply("🔒 تم قفل التوجيه، سيتم حذف أي رسالة موجهة.")
-
-# قفل وفتح المعرفات (@)
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل المعرفات")
-async def lock_usernames(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)["username"] = False
-    await message.reply("🔒 تم قفل المعرفات، سيتم حذف أي معرف ينشر.")
-
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "فتح المعرفات")
-async def unlock_usernames(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)["username"] = True
-    await message.reply("🔓 تم فتح المعرفات بنجاح.")
-
-# --- 3. قائمة الأوامر المرتبة والمزخرفة لـ سورس كرستال ---
+# دالة عرض القائمة الرئيسية للأوامر بالأزرار الشفافة
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
 async def send_group_commands(message: Message):
     if not await is_admin(message): return
     
-    commands_text = """╭─── • **سـورس كـرسـتـال** • ───╮
-│                                        
-│ 🛠️ **أوامـر الأقـفـال والـحـمـايـة:**
-│ 🔓 `فتح الروابط` ┃ 🔒 `قفل الروابط`
-│ 🔓 `فتح التوجيه` ┃ 🔒 `قفل التوجيه`
-│ 🔓 `فتح المعرفات` ┃ 🔒 `قفل المعرفات`
-│                                        
-│ 👮 **أوامـر الإدارة (بـالـرد):**
-│ 👤 `حظر` أو `طرد` ┃ `الغاء الحظر`
-│ 🔇 `كتم` العضو    ┃ `الغاء الكتم`
-│                                        
-│ 📊 **أوامـر الـمـعـلـومـات:**
-│ 🆔 `ايدي` ┃ 👤 `اسمي` ┃ 🎖️ `رتبتي`
-│ 🔍 `كشف` (بالرد لعرض معلوماته)
-│ 🔗 `الرابط` (جلب رابط المجموعة)
-│                                        
-│ 🎯 **أوامـر الـتـسـلـيـة والـتـفـاعـل:**
-│ 💬 `هلو` ┃ `شلونكم` ┃ `البوت شغال؟`
-│ 🔮 `حظي` ┃ 🐦 `تويت` ┃ 💬 `كول`
-│ ❤️ `نسبة حبه` (بالرد على الشخص)
-│                                        
-├─── • **CRYSTAL SOURCE** • ───┤
-│ 📌 جميع الأوامر تعمل بدون شارطة (/).
-╰────────────────────────╯"""
-    
-    await message.reply(text=commands_text)
+    # نص الرسالة الرئيسية كما في الصورة
+    main_text = """✧ ¦ اوامـر الـبـوت الـرئـيـسـيـة
+— — — — — — — — — —
+✧ ¦ م1 ← اوامر الحمايه
+✧ ¦ م2 ← اوامر الادمنيه
+✧ ¦ م3 ← اوامر المدراء
+✧ ¦ م4 ← اوامر المنشئين
+✧ ¦ م5 ← اوامر المالكين
+✧ ¦ م6 ← اوامر التحشيش
+✧ ¦ م7 ← اوامر المطور
+✧ ¦ م8 ← اوامر التسليه
+✧ ¦ م9 ← اوامر البنك"""
 
-# --- 4. معالجة كافة رسائل وحماية وألعاب المجموعة ---
+    # تصميم الأزرار الشفافة (Inline Keyboard) بنفس ترتيب الصورة 25718.jpg
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="{ 2 }", callback_data="cmd_2"),
+            InlineKeyboardButton(text="{ 1 }", callback_data="cmd_1")
+        ],
+        [
+            InlineKeyboardButton(text="{ 4 }", callback_data="cmd_4"),
+            InlineKeyboardButton(text="{ 3 }", callback_data="cmd_3")
+        ],
+        [
+            InlineKeyboardButton(text="{ 6 }", callback_data="cmd_6"),
+            InlineKeyboardButton(text="{ 5 }", callback_data="cmd_5")
+        ],
+        [
+            InlineKeyboardButton(text="{ الالعاب }", callback_data="cmd_games"),
+            InlineKeyboardButton(text="{ م7 }", callback_data="cmd_7")
+        ],
+        [
+            InlineKeyboardButton(text="{ اوامر البنك }", callback_data="cmd_bank"),
+            InlineKeyboardButton(text="{ اوامر التسليه }", callback_data="cmd_8")
+        ],
+        [
+            InlineKeyboardButton(text="{ التعطيل / التفعيل }", callback_data="cmd_toggle"),
+            InlineKeyboardButton(text="{ القفل / الفتح }", callback_data="cmd_locks")
+        ],
+        [
+            InlineKeyboardButton(text="- قناة السورس .", url="https://t.me/YourChannel") # ضع رابط قناتك هنا
+        ]
+    ])
+    
+    await message.reply(text=main_text, reply_markup=keyboard)
 @router.message(F.chat.type.in_({"group", "supergroup"}))
 async def handle_crystal_source(message: Message):
     if not message.text: return
