@@ -4,19 +4,10 @@ import json
 
 router = Router()
 
-def check_lock(key):
-    try:
-        with open("settings.json", "r") as f: return json.load(f).get(key, False)
-    except: return False
-
-@router.message(F.text.in_({"/mute", "/promote", "/ban"})) # مراقبة أوامر التيليجرام
-async def watch_admins(message: Message):
-    if message.from_user.id == 8074717568: return # استثناء المنشئ
-    
-    if check_lock("mute") and message.text == "/mute":
-        await message.reply("ممنوع الكتم! المنشئ معطل هذه الصلاحية.")
-        await message.delete()
-    
-    if check_lock("promote") and message.text == "/promote":
-        await message.reply("ممنوع الرفع! المنشئ معطل هذه الصلاحية.")
+@router.message(F.text.in_({"/mute", "/promote"}))
+async def check_commands(message: Message):
+    if message.from_user.id == 8074717568: return
+    with open("settings.json", "r") as f: data = json.load(f)
+    if (data.get("mute") and message.text == "/mute") or (data.get("promote") and message.text == "/promote"):
+        await message.reply("هذه الصلاحية معطلة من قبل المنشئ!")
         await message.delete()
