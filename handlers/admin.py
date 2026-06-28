@@ -46,7 +46,7 @@ async def activate_group(message: Message):
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل الروابط")
 async def lock_links(message: Message):
     if not await is_admin(message): return
-    get_settings(message.chat.id["links"]) = False
+    get_settings(message.chat.id)["links"] = False  # تم تصحيح مكان القوس هنا لقفل الروابط
     await message.reply("🔒 تم قفل الروابط بنجاح، سيتم تنظيف المجموعة تلقائياً.")
 
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "فتح الروابط")
