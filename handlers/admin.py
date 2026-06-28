@@ -1,41 +1,35 @@
-from aiogram import Router, types, Bot
-from config import ADMIN_ID
+from aiogram import Router, types
+from aiogram.types import CallbackQuery
+
 from db import get_users
+from config import ADMIN_ID
 
 router = Router()
 
-bot_instance = None
 
-def set_bot(bot: Bot):
-    global bot_instance
-    bot_instance = bot
-
-
-@router.message(lambda m: m.text == "📢 إرسال رسالة")
-async def ask_message(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
+# 📢 زر إرسال رسالة
+@router.callback_query(lambda c: c.data == "send")
+async def send_menu(call: CallbackQuery):
+    if call.from_user.id != ADMIN_ID:
         return
 
-    await message.answer("✍️ اكتب الرسالة الآن وسيتم إرسالها للجميع")
+    await call.message.answer("✍️ اكتب الرسالة الآن لإرسالها للجميع")
 
 
-@router.message()
-async def broadcast(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    if message.text == "📢 إرسال رسالة":
+# 👥 عدد المستخدمين
+@router.callback_query(lambda c: c.data == "users")
+async def users_count(call: CallbackQuery):
+    if call.from_user.id != ADMIN_ID:
         return
 
     users = get_users()
+    await call.message.answer(f"👥 عدد المستخدمين: {len(users)}")
 
-    sent = 0
 
-    for user_id in users:
-        try:
-            await message.bot.send_message(user_id, message.text)
-            sent += 1
-        except:
-            pass
+# 🚫 حظر (نخليه لاحقاً)
+@router.callback_query(lambda c: c.data == "ban")
+async def ban_user(call: CallbackQuery):
+    if call.from_user.id != ADMIN_ID:
+        return
 
-    await message.answer(f"✅ تم الإرسال إلى {sent} مستخدم")
+    await call.message.answer("🚫 ميزة الحظر سيتم إضافتها لاحقاً")
