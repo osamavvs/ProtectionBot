@@ -1,5 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import CommandStart
 import random
 
 router = Router()
@@ -21,10 +22,11 @@ async def is_admin(message: Message) -> bool:
     member = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
     return member.status in ["creator", "administrator"]
 
-# --- 1. ترحيب الخاص فقط للمطور (منع الاستخدام العادي بالخاص) ---
-@router.message(F.chat.type == "private", F.text == "/start")
+# --- 1. ترحيب الخاص (مقيد بالـ private فقط بشكل صارم) ---
+# هنا قمنا بتحديد الفلتر F.chat.type == "private" لضمان عدم خروج الرسالة في المجموعات نهائياً
+@router.message(F.chat.type == "private", CommandStart())
 async def send_private_start(message: Message):
-    # إذا كان الحساب ليس حسابك (المطور)، تظهر رسالة الرفض
+    # التحقق من معرف المطور الخاص بك
     if message.from_user.username != "U_K44":
         await message.reply("🚸 عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!\n👑 مطور السورس: @U_K44")
         return
@@ -133,12 +135,16 @@ async def send_group_commands(message: Message):
     
     await message.reply(text=main_text, reply_markup=keyboard)
 
-# --- 4. معالجة رسائل الحماية والإدارة والتسلية ---
+# --- 4. معالجة رسائل الحماية والإدارة والتسلية داخل المجموعات ---
 @router.message(F.chat.type.in_({"group", "supergroup"}))
 async def handle_crystal_source(message: Message):
     if not message.text: return
     text = message.text.strip()
     
+    # تجاهل أي محاولة لاستدعاء امر start داخل المجموعات في هذا الملف
+    if text.startswith("/start"):
+        return
+
     if await is_admin(message) and message.reply_to_message:
         target_user = message.reply_to_message.from_user
         
