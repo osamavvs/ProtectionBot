@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher
 from handlers import admin, start, callbacks
 
 # ضع التوكين الخاص بك هنا
-API_TOKEN = 'YOUR_BOT_TOKEN_HERE'
+API_TOKEN = '8787399797:AAFFPGgLOqo7hY9hsfzya9XbTf79Ra0DsXU'
 
 async def main():
     bot = Bot(token=API_TOKEN)
