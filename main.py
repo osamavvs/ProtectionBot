@@ -7,7 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 
 from handlers.start import router as start_router
 from handlers.protection import router as protection_router
-from handlers.admin import router as admin_router, set_bot
+from handlers.admin import router as admin_router, 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
