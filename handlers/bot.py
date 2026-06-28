@@ -1,3 +1,17 @@
+from database import init_db
+import asyncio
+
+# دالة لتشغيل البوت
+async def start_bot():
+    await init_db() # هذه أهم خطوة
+    print("تم تهيئة قاعدة البيانات بنجاح...")
+
+# ثم عند تشغيل التطبيق
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_bot())
+    app.run()
+
 from pyrogram import Client
 import os
 
