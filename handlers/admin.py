@@ -62,12 +62,6 @@ async def lock_forward(message: Message):
     get_settings(message.chat.id)["forward"] = False
     await message.reply("🔒 تم قفل التوجيه، سيتم حذف أي رسالة موجهة.")
 
-@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "فتح التوجيه")
-async def unlock_forward(message: Message):
-    if not await is_admin(message): return
-    get_settings(message.chat.id)["forward"] = True
-    await message.reply("🔓 تم فتح التوجيه بنجاح.")
-
 # قفل وفتح المعرفات (@)
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل المعرفات")
 async def lock_usernames(message: Message):
@@ -81,13 +75,50 @@ async def unlock_usernames(message: Message):
     get_settings(message.chat.id)["username"] = True
     await message.reply("🔓 تم فتح المعرفات بنجاح.")
 
-# --- 3. معالجة كافة رسائل وحماية وألعاب المجموعة ---
+# --- 3. قائمة الأوامر داخل الكروب ---
+@router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
+async def send_group_commands(message: Message):
+    # يسمح فقط للمشرفين برؤية الأوامر لتجنب الهوس بالقروب
+    if not await is_admin(message): return
+    
+    commands_text = """⚙️ **قائمة أوامر سورس تشاكي داخل المجموعة:**
+
+🛠️ **أوامر الحماية والأقفال:**
+• `قفل الروابط` / `فتح الروابط`
+• `قفل التوجيه` / `فتح التوجيه`
+• `قفل المعرفات` / `فتح المعرفات`
+
+👮 **أوامر الإدارة (بالرد على العضو):**
+• `طرد` أو `حظر` -> لطرد العضو
+• `كتم` -> لمنع العضو من الكتابة
+• `الغاء الكتم` -> لفك تقييد العضو
+• `الغاء الحظر` -> لإلغاء حظر العضو
+
+📊 **أوامر المعلومات العامة:**
+• `ايدي` -> لعرض ايديك وايدي الكروب
+• `اسمي` -> لعرض اسمك الأول
+• `رتبتي` -> لمعرفة رتبتك بالقروب
+• `كشف` (بالرد) -> لكشف معلومات العضو
+• `الرابط` -> لاستخراج رابط القروب
+
+🎯 **أوامر التسلية والترفيه:**
+• `هلو` ، `شلونكم` ، `البوت شغال؟`
+• `حظي` -> لعرض حظك اليومي
+• `تويت` -> لعرض تغريدة عشوائية
+• `كول` -> لعرض حكمة مأثورة
+• `نسبة حبه` (بالرد) -> لقياس نسبة الحب
+
+💎 **ملاحظة:** جميع الأوامر تعمل بدون الشارطة (`/`)."""
+    
+    await message.reply(text=commands_text)
+
+# --- 4. معالجة كافة رسائل وحماية وألعاب المجموعة ---
 @router.message(F.chat.type.in_({"group", "supergroup"}))
 async def handle_chucky_source(message: Message):
     if not message.text: return
     text = message.text.strip()
     
-    # [أولاً] أوامر المشرفين بالرد السريع (نظام تشاكي الحاسم)
+    # [أولاً] أوامر المشرفين بالرد السريع
     if await is_admin(message) and message.reply_to_message:
         target_user = message.reply_to_message.from_user
         
@@ -119,26 +150,23 @@ async def handle_chucky_source(message: Message):
             except: pass
             return
 
-    # [ثانياً] الحماية التلقائية للأعضاء العاديين (الفحص الذكي)
+    # [ثانياً] الحماية التلقائية للأعضاء العاديين
     if not await is_admin(message):
         settings = get_settings(message.chat.id)
         
-        # فحص الروابط
         if not settings["links"] and ("http" in text or "t.me/" in text or ".com" in text):
             try: return await message.delete()
             except: pass
             
-        # فحص التوجيه
         if not settings["forward"] and message.forward_date:
             try: return await message.delete()
             except: pass
             
-        # am فحص المعرفات
         if not settings["username"] and "@" in text:
             try: return await message.delete()
             except: pass
 
-    # [ثالثاً] أوامر معلومات الأعضاء (سورس تشاكي)
+    # [ثالثاً] أوامر معلومات الأعضاء
     if text == "ايدي":
         await message.reply(f"🆔 ايديك » `{message.from_user.id}`\n🗂️ ايدي الكروب » `{message.chat.id}`")
     elif text == "اسمي":
