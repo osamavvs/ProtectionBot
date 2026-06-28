@@ -1,28 +1,29 @@
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from filters.is_admin import IsAdmin
+import os
 
 router = Router()
 
+# دالة لتجهيز لوحة الأدمن
 def get_admin_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="قفل المجموعة 🔒", callback_data="lock_group")],
-        [InlineKeyboardButton(text="فتح المجموعة 🔓", callback_data="unlock_group")],
-        [InlineKeyboardButton(text="قائمة المحظورين 🚫", callback_data="ban_list")],
-        [InlineKeyboardButton(text="الإحصائيات 📊", callback_data="stats")]
+        [InlineKeyboardButton(text="إحصائيات 📊", callback_data="stats")]
     ])
     return keyboard
 
-@router.message(IsAdmin(), Command("start"))
-async def admin_start(message: Message):
-    await message.answer(
-        "🛠 **أهلاً بك يا مدير في لوحة التحكم المركزية**\n"
-        "يمكنك التحكم في إعدادات الحماية من هنا:",
-        reply_markup=get_admin_keyboard()
-    )
-
 @router.message(Command("start"))
-async def user_start(message: Message):
-    if message.chat.type == "private":
-        await message.answer("أهلاً بك في بوت الحماية الخاص بنا. هذا البوت مخصص للمجموعات فقط.")
+async def start_handler(message: Message):
+    # الرقم الخاص بك الذي أرسلته
+    ADMIN_ID = 8074717568
+    
+    # التحقق إذا كان المرسل هو أنت
+    if message.from_user.id == ADMIN_ID:
+        await message.answer(
+            "🛠 **أهلاً بك يا مدير، هذه لوحة التحكم الخاصة بك:**", 
+            reply_markup=get_admin_keyboard()
+        )
+    else:
+        # رسالة ترحيب عادية للمستخدمين الآخرين
+        await message.answer("أهلاً بك في بوت الحماية! نحن نعمل على تأمين المجموعة.")
