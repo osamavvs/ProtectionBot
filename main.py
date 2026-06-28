@@ -18,8 +18,7 @@ bot = Bot(
 
 dp = Dispatcher()
 
-# 👇 ربط البوت مع الأدمن (مهم جداً)
-set_bot(bot)
+# 👇 ربط البوت مع الأدمن (مهم جداً)Dispatch
 
 # تسجيل الراوترات
 dp.include_router(start_router)
