@@ -3,6 +3,9 @@ import logging
 import os
 from aiogram import Bot, Dispatcher
 from handlers import admin_panel, anti_spam, extras
+from handlers import admin_panel, anti_spam, extras, id_card
+# ... داخل دالة main
+dp.include_router(id_card.router)
 
 TOKEN = os.getenv("TOKEN")
 
