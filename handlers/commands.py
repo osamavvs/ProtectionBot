@@ -7,7 +7,6 @@ router = Router()
 # تعريف معرف الأدمن الخاص بك
 ADMIN_ID = 8074717568
 
-@router.message(Command("start"))
 async def cmd_start(message: Message):
     # التحقق مما إذا كان المستخدم هو الأدمن
     if message.from_user.id == ADMIN_ID:
