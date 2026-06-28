@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, InlineKeyboardButton
 import random
 
-# تعريف الراوتر بشكل صحيح لتجنب خطأ الـ NameError
+# تعريف الراوتر بشكل صحيح لـ سورس كرستال
 router = Router()
 
 # قاعدة بيانات مؤقتة لحفظ أقفال وإعدادات القروبات
@@ -30,7 +30,8 @@ async def block_private(message: Message):
     private_text = """🚸 **عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!**
 
 ❌ لا يمكنك استخدام أوامر البوت هنا في الخاص.
-💎 أضف البوت إلى مجموعتك وارفعها مشرفاً لتستمتع بالحماية والتسلية."""
+💎 أضف البوت إلى مجموعتك وارفعها مشرفاً لتستمتع بالحماية والتسلية.
+👑 مطور السورس: @U_K44"""
     try:
         await message.reply(text=private_text)
     except: pass
@@ -45,7 +46,7 @@ async def activate_group(message: Message):
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل الروابط")
 async def lock_links(message: Message):
     if not await is_admin(message): return
-    get_settings(message.chat.id)["links"] = False
+    get_settings(message.chat.id["links"]) = False
     await message.reply("🔒 تم قفل الروابط بنجاح، سيتم تنظيف المجموعة تلقائياً.")
 
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "فتح الروابط")
@@ -72,7 +73,7 @@ async def unlock_usernames(message: Message):
     get_settings(message.chat.id)["username"] = True
     await message.reply("🔓 تم فتح المعرفات بنجاح.")
 
-# --- 3. دالة عرض القائمة الرئيسية للأوامر بالأزرار الشفافة لـ سورس كرستال ---
+# --- 3. دالة عرض القائمة الرئيسية للأوامر بالأزرار الشفافة ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
 async def send_group_commands(message: Message):
     if not await is_admin(message): return
@@ -115,7 +116,7 @@ async def send_group_commands(message: Message):
             InlineKeyboardButton(text="{ القفل / الفتح }", callback_data="cmd_locks")
         ],
         [
-            InlineKeyboardButton(text="- قناة السورس .", url="https://t.me/YourChannel")
+            InlineKeyboardButton(text="- قناة السورس .", url="https://t.me/BBABB9")
         ]
     ])
     
@@ -177,5 +178,7 @@ async def handle_crystal_source(message: Message):
     elif text == "كشف" and message.reply_to_message:
         tgt = message.reply_to_message.from_user
         await message.reply(f"📋 معلومات العضو:\n• الاسم: {tgt.full_name}\n• الايدي: `{tgt.id}`")
+    elif text == "مطور" or text == "المطور":
+        await message.reply("👑 مطور السورس الغالي هو: @U_K44")
     elif text == "هلو":
         await message.reply(f"هلا عيني {message.from_user.first_name}، نورت سورس كرستال 💎")
