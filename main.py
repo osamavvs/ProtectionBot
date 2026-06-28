@@ -13,15 +13,13 @@ async def main():
     logging.basicConfig(level=logging.INFO)
     
     TOKEN = os.getenv("BOT_TOKEN")
-    if not TOKEN:
-        print("خطأ: يرجى وضع التوكن في متغيرات Railway باسم BOT_TOKEN")
-        return
 
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
 
-    # الترتيب: replies أولاً حتى لا تحذفها الحماية
+    # الترتيب مهم جداً:
+    # نضع replies أولاً لكي يفحص الردود قبل أن تتدخل الحماية (admin)
     dp.include_router(replies.router)    
     dp.include_router(admin.router)      
     dp.include_router(start.router)      
