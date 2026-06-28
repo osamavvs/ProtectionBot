@@ -23,10 +23,10 @@ async def is_admin(message: Message) -> bool:
     member = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
     return member.status in ["creator", "administrator"]
 
-# --- 1. حظر الخاص تماماً نفس أسلوب تشاكي ---
+# --- 1. حظر الخاص تماماً لـ سورس كرستال ---
 @router.message(F.chat.type == "private")
 async def block_private(message: Message):
-    private_text = """🚸 **عذراً عزيزي، سورس تشاكي مخصص للمجموعات فقط!**
+    private_text = """🚸 **عذراً عزيزي، سورس كرستال مخصص للمجموعات فقط!**
 
 ❌ لا يمكنك استخدام أوامر البوت هنا في الخاص.
 💎 أضف البوت إلى مجموعتك وارفعها مشرفاً لتستمتع بالحماية والتسلية."""
@@ -40,7 +40,7 @@ async def block_private(message: Message):
 async def activate_group(message: Message):
     if not await is_admin(message): return
     get_settings(message.chat.id)
-    await message.reply(f"📌 المجموعه » {message.chat.title}\n✨ تم تفعيلها بنجاح في سورس تشاكي.")
+    await message.reply(f"📌 المجموعه » {message.chat.title}\n✨ تم تفعيلها بنجاح في سورس كرستال.")
 
 # قفل وفتح الروابط
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "قفل الروابط")
@@ -75,46 +75,41 @@ async def unlock_usernames(message: Message):
     get_settings(message.chat.id)["username"] = True
     await message.reply("🔓 تم فتح المعرفات بنجاح.")
 
-# --- 3. قائمة الأوامر داخل الكروب ---
+# --- 3. قائمة الأوامر المرتبة والمزخرفة لـ سورس كرستال ---
 @router.message(F.chat.type.in_({"group", "supergroup"}), F.text == "الاوامر")
 async def send_group_commands(message: Message):
-    # يسمح فقط للمشرفين برؤية الأوامر لتجنب الهوس بالقروب
     if not await is_admin(message): return
     
-    commands_text = """⚙️ **قائمة أوامر سورس تشاكي داخل المجموعة:**
-
-🛠️ **أوامر الحماية والأقفال:**
-• `قفل الروابط` / `فتح الروابط`
-• `قفل التوجيه` / `فتح التوجيه`
-• `قفل المعرفات` / `فتح المعرفات`
-
-👮 **أوامر الإدارة (بالرد على العضو):**
-• `طرد` أو `حظر` -> لطرد العضو
-• `كتم` -> لمنع العضو من الكتابة
-• `الغاء الكتم` -> لفك تقييد العضو
-• `الغاء الحظر` -> لإلغاء حظر العضو
-
-📊 **أوامر المعلومات العامة:**
-• `ايدي` -> لعرض ايديك وايدي الكروب
-• `اسمي` -> لعرض اسمك الأول
-• `رتبتي` -> لمعرفة رتبتك بالقروب
-• `كشف` (بالرد) -> لكشف معلومات العضو
-• `الرابط` -> لاستخراج رابط القروب
-
-🎯 **أوامر التسلية والترفيه:**
-• `هلو` ، `شلونكم` ، `البوت شغال؟`
-• `حظي` -> لعرض حظك اليومي
-• `تويت` -> لعرض تغريدة عشوائية
-• `كول` -> لعرض حكمة مأثورة
-• `نسبة حبه` (بالرد) -> لقياس نسبة الحب
-
-💎 **ملاحظة:** جميع الأوامر تعمل بدون الشارطة (`/`)."""
+    commands_text = """╭─── • **سـورس كـرسـتـال** • ───╮
+│                                        
+│ 🛠️ **أوامـر الأقـفـال والـحـمـايـة:**
+│ 🔓 `فتح الروابط` ┃ 🔒 `قفل الروابط`
+│ 🔓 `فتح التوجيه` ┃ 🔒 `قفل التوجيه`
+│ 🔓 `فتح المعرفات` ┃ 🔒 `قفل المعرفات`
+│                                        
+│ 👮 **أوامـر الإدارة (بـالـرد):**
+│ 👤 `حظر` أو `طرد` ┃ `الغاء الحظر`
+│ 🔇 `كتم` العضو    ┃ `الغاء الكتم`
+│                                        
+│ 📊 **أوامـر الـمـعـلـومـات:**
+│ 🆔 `ايدي` ┃ 👤 `اسمي` ┃ 🎖️ `رتبتي`
+│ 🔍 `كشف` (بالرد لعرض معلوماته)
+│ 🔗 `الرابط` (جلب رابط المجموعة)
+│                                        
+│ 🎯 **أوامـر الـتـسـلـيـة والـتـفـاعـل:**
+│ 💬 `هلو` ┃ `شلونكم` ┃ `البوت شغال؟`
+│ 🔮 `حظي` ┃ 🐦 `تويت` ┃ 💬 `كول`
+│ ❤️ `نسبة حبه` (بالرد على الشخص)
+│                                        
+├─── • **CRYSTAL SOURCE** • ───┤
+│ 📌 جميع الأوامر تعمل بدون شارطة (/).
+╰────────────────────────╯"""
     
     await message.reply(text=commands_text)
 
 # --- 4. معالجة كافة رسائل وحماية وألعاب المجموعة ---
 @router.message(F.chat.type.in_({"group", "supergroup"}))
-async def handle_chucky_source(message: Message):
+async def handle_crystal_source(message: Message):
     if not message.text: return
     text = message.text.strip()
     
@@ -180,13 +175,13 @@ async def handle_chucky_source(message: Message):
     elif text == "الرابط":
         try:
             link = await message.chat.export_invite_link()
-            await message.reply(f"🔗 رابط المجموعة الخاص بسورس تشاكي:\n{link}")
+            await message.reply(f"🔗 رابط المجموعة الخاص بسورس كرستال:\n{link}")
         except:
             await message.reply("❌ البوت يحتاج إلى صلاحية إدارة الروابط لاستخراج الرابط.")
 
     # [رابعاً] قسم التسلية والردود السريعة
     elif text == "هلو":
-        await message.reply(f"هلا عيني {message.from_user.first_name}، نورت سورس تشاكي 💎")
+        await message.reply(f"هلا عيني {message.from_user.first_name}، نورت سورس كرستال 💎")
     elif text == "البوت شغال؟":
         await message.reply("شغال طيارة وعال العال! ⚡")
     elif text == "نسبة حبه":
@@ -199,7 +194,7 @@ async def handle_chucky_source(message: Message):
         await message.reply(f"🔮 {message.from_user.first_name}، {random.choice(quotes)}")
     elif text == "تويت":
         tweets = ["لا تبرر لأحد، اتركهم يفهمونك خطأ ويريحونك من لغوتهم.", "أحياناً العزلة أحلى من مئة صديق منافق.", "كن عظيماً ولا ترضى بأقل مما تستحق."]
-        await message.reply(f"🐦 تـويـت تشاكي: {random.choice(tweets)}")
+        await message.reply(f"🐦 تـويـت كرستال: {random.choice(tweets)}")
     elif text == "كول":
         sayings = ["من حفر حفرة لأخيه وقع فيها.", "الصمت حكمه وقليل فاعله.", "الوقت كالسيف إن لم تقطعه قطعك."]
         await message.reply(f"💬 كول المأثور: {random.choice(sayings)}")
